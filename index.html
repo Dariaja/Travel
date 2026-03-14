@@ -7,6 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script
+    src="https://api-maps.yandex.ru/2.1/?apikey=YOUR_YANDEX_API_KEY&lang=ru_RU"
+    type="text/javascript"
+  ></script>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -211,6 +215,25 @@
     <p class="program-note">*возможны корректировки по погодным условиям и/или семейным обстоятельствам</p>
   </div>
 </section>
+
+    <section class="section map" id="map">
+      <div class="container">
+        <div class="section-head" data-animate>
+          <h2>Маршрут на карте</h2>
+          <p>Ключевые точки путешествия.</p>
+        </div>
+        <div class="map-wrapper" data-animate>
+          <div id="route-map" class="map-embed" role="img" aria-label="Карта маршрута Камчатки"></div>
+          <div class="map-actions">
+            <button class="button ghost" type="button" id="map-fullscreen" data-map-url="https://yandex.ru/maps/?ll=158.75,53.15&z=7">
+              Открыть карту полностью
+            </button>
+            
+          </div>
+          
+        </div>
+      </div>
+    </section>
 
     <section class="section gallery" id="gallery">
       <div class="container">
@@ -486,6 +509,73 @@
         closeLightbox();
       }
     });
+
+    const mapContainer = document.getElementById('route-map');
+    const mapFullscreenBtn = document.getElementById('map-fullscreen');
+
+    if (mapFullscreenBtn && mapContainer) {
+      mapFullscreenBtn.addEventListener('click', () => {
+        const fallbackUrl = mapFullscreenBtn.dataset.mapUrl;
+        if (mapContainer.requestFullscreen) {
+          mapContainer.requestFullscreen().catch(() => {
+            if (fallbackUrl) {
+              window.open(fallbackUrl, '_blank', 'noopener');
+            }
+          });
+        } else if (fallbackUrl) {
+          window.open(fallbackUrl, '_blank', 'noopener');
+        }
+      });
+    }
+
+    if (window.ymaps && mapContainer) {
+      ymaps.ready(() => {
+        const map = new ymaps.Map('route-map', {
+          center: [53.15, 158.75],
+          zoom: 7,
+          controls: ['zoomControl', 'fullscreenControl']
+        });
+
+        map.behaviors.enable(['scrollZoom', 'drag', 'multiTouch', 'dblClickZoom']);
+
+        const locations = [
+          { name: 'Петропавловск-Камчатский', coords: [53.0569, 158.622], image: 'смотровая.jpg' },
+          { name: 'Авачинский вулкан', coords: [53.255, 158.8297], image: 'вулкан мжо.jpg' },
+          { name: 'Экструзия Верблюд', coords: [53.2725, 158.7631], image: 'верблюд.jpg' },
+          { name: 'Дачные источники', coords: [52.53045, 158.19147], image: 'дачные источники.jpg' },
+          { name: 'Вилючинский вулкан', coords: [52.7047, 158.2814], image: 'вилюч.jpg' },
+          { name: 'Халактырский пляж', coords: [53.1133, 159.1049], image: 'рассвет.jpg' },
+          { name: 'Апача', coords: [52.872105, 157.342416], image: 'вулкане апача.jpg' },
+          { name: 'Аэропорт', coords: [53.181461, 158.432311], image: 'самолет.jpg' },
+          { name: 'Начики', coords: [53.122735, 157.749876], image: 'гориячие.jpg' },
+          { name: 'Малки', coords: [53.322370, 157.539144], image: 'бассейн мама.jpg' }
+        ];
+
+        locations.forEach((place) => {
+          const imageHtml = place.image
+            ? `<img src="${place.image}" alt="${place.name}">`
+            : '';
+          const balloonHtml = `
+            <div class="map-balloon">
+              ${imageHtml}
+              <div class="map-balloon-title">${place.name}</div>
+            </div>
+          `;
+          const placemark = new ymaps.Placemark(place.coords, {
+            balloonContent: balloonHtml,
+            hintContent: place.name
+          });
+          placemark.events.add('mouseenter', () => placemark.balloon.open());
+          placemark.events.add('mouseleave', () => placemark.balloon.close());
+          map.geoObjects.add(placemark);
+        });
+
+        const bounds = map.geoObjects.getBounds();
+        if (bounds) {
+          map.setBounds(bounds, { checkZoomRange: true, zoomMargin: 40 });
+        }
+      });
+    }
   </script>
 </body>
 </html>
